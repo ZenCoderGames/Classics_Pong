@@ -1,0 +1,30 @@
+Game Design Document for Pong
+
+Gameplay Elements: Level, Paddles, Ball
+- Level: an enclosed rectangular box surrounded by walls. Left and Right edges are home bases and should be represented with player colors (Blue/Red)
+- Paddles: Wide rectangular box that the player controls
+- Ball: A circular object that respects 2d Physics of a ball in real life (except gravity)
+
+Gameplay Logic:
+- There are 2 Paddles in front of the Left/Right edges of the game board.
+- Paddles reflect the ball when hit
+- When the game starts, the Ball starts from the center of the game board and randomly chooses a direction and angle to assign its velocity.
+- Paddles can go up and down but stop at the walls (Player 1 - W/S and Player 2 - Up/Down arrow)
+
+End Conditions:
+- Each player has 3 lives.
+- If the ball reaches either edge, the player whose side it is loses a life.
+- Victory: when your opponent loses all Lives.
+
+Game Feel:
+- The ball should have a trail
+- When the ball is hit, do the follow: hit flash, hit pause, camera shake, vfx and sound fx
+- When the ball hits a wall edge, flash the battlefield
+
+UI:
+- Use the skill make-classic-game-ui for the HTML layout and javascript for the game logic.
+- The top left and top right panels represent the Lives left for each player
+
+Additional Notes:
+- Use art in the art folder for respective elements like Walls/Ball etc.
+- All configurable elements should be defined in config.js

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pong</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="game-container">
+      <header class="game-header">
+        <div class="hud-card hud-card-p1">
+          <span class="hud-label">Player 1</span>
+          <span id="lives-p1" class="hud-value hud-value-p1">3</span>
+        </div>
+
+        <div class="title-block">
+          <h1 class="game-title">Pong</h1>
+          <p class="game-subtitle">A Classic</p>
+        </div>
+
+        <div class="hud-card hud-card-right hud-card-p2">
+          <span class="hud-label">Player 2</span>
+          <span id="lives-p2" class="hud-value hud-value-p2">3</span>
+        </div>
+      </header>
+
+      <main class="playfield-shell">
+        <div class="canvas-wrapper">
+          <canvas id="game-canvas"></canvas>
+        </div>
+
+        <div id="menu-overlay" class="overlay">
+          <div class="prompt-card">
+            <p class="controls-hint">Player 1: W / S</p>
+            <p class="controls-hint">Player 2: ↑ / ↓</p>
+            <button id="play-btn" class="btn btn-primary" type="button">Play</button>
+          </div>
+        </div>
+
+        <div id="victory-overlay" class="overlay hidden">
+          <div class="popup">
+            <h2 id="victory-title">Victory</h2>
+            <p id="victory-message">Player 1 wins!</p>
+            <button id="restart-btn" class="btn btn-primary" type="button">Play Again</button>
+          </div>
+        </div>
+      </main>
+
+      <button id="music-toggle" class="music-toggle" type="button">Sound: On</button>
+    </div>
+
+    <script type="module" src="game.js"></script>
+  </body>
+</html>
