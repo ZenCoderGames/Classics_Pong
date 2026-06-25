@@ -89,4 +89,17 @@ export const CONFIG = {
     musicVolume: 0.5,
     musicAttenuation: 0.08,
   },
+
+  ai: {
+    startSkill: 0.45,
+    minSkill: 0.15,
+    maxSkill: 0.95,
+    baseSpeedRatio: 0.42,
+    maxSpeedRatio: 0.98,
+    maxPredictionError: 72,
+    skillUpOnPlayerScore: 0.08,
+    skillDownOnPlayerMiss: 0.1,
+    skillUpPerLongRally: 0.025,
+    rallyHitThreshold: 6,
+  },
 };

@@ -10,7 +10,7 @@
     <div class="game-container">
       <header class="game-header">
         <div class="hud-card hud-card-p1">
-          <span class="hud-label">Player 1</span>
+          <span id="label-p1" class="hud-label">Player 1</span>
           <span id="lives-p1" class="hud-value hud-value-p1">3</span>
         </div>
 
@@ -20,7 +20,7 @@
         </div>
 
         <div class="hud-card hud-card-right hud-card-p2">
-          <span class="hud-label">Player 2</span>
+          <span id="label-p2" class="hud-label">Player 2</span>
           <span id="lives-p2" class="hud-value hud-value-p2">3</span>
         </div>
       </header>
@@ -32,9 +32,12 @@
 
         <div id="menu-overlay" class="overlay">
           <div class="prompt-card">
-            <p class="controls-hint">Player 1: W / S</p>
-            <p class="controls-hint">Player 2: ↑ / ↓</p>
-            <button id="play-btn" class="btn btn-primary" type="button">Play</button>
+            <p class="menu-heading">Choose Mode</p>
+            <p class="controls-hint">Local PvP: W / S vs ↑ / ↓</p>
+            <div class="menu-actions">
+              <button id="pvp-btn" class="btn btn-primary" type="button">Local PvP</button>
+              <button id="ai-btn" class="btn btn-secondary" type="button">vs CPU</button>
+            </div>
           </div>
         </div>
 
@@ -42,7 +45,10 @@
           <div class="popup">
             <h2 id="victory-title">Victory</h2>
             <p id="victory-message">Player 1 wins!</p>
-            <button id="restart-btn" class="btn btn-primary" type="button">Play Again</button>
+            <div class="popup-actions">
+              <button id="restart-btn" class="btn btn-primary" type="button">Play Again</button>
+              <button id="menu-btn" class="btn btn-secondary" type="button">Main Menu</button>
+            </div>
           </div>
         </div>
       </main>

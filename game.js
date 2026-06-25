@@ -10,16 +10,25 @@ const ctx = sceneCanvas.getContext("2d");
 
 const livesP1El = document.getElementById("lives-p1");
 const livesP2El = document.getElementById("lives-p2");
+const labelP1El = document.getElementById("label-p1");
+const labelP2El = document.getElementById("label-p2");
 const menuOverlay = document.getElementById("menu-overlay");
 const victoryOverlay = document.getElementById("victory-overlay");
 const victoryTitle = document.getElementById("victory-title");
 const victoryMessage = document.getElementById("victory-message");
-const playBtn = document.getElementById("play-btn");
+const pvpBtn = document.getElementById("pvp-btn");
+const aiBtn = document.getElementById("ai-btn");
 const restartBtn = document.getElementById("restart-btn");
+const menuBtn = document.getElementById("menu-btn");
 const musicToggle = document.getElementById("music-toggle");
 
 canvas.width = CONFIG.canvas.width;
 canvas.height = CONFIG.canvas.height;
+
+const GameMode = {
+  PVP: "pvp",
+  AI: "ai",
+};
 
 const GameState = {
   MENU: "menu",
@@ -48,7 +57,10 @@ let backgroundPattern = null;
 
 const state = {
   phase: GameState.MENU,
+  mode: GameMode.PVP,
   lives: [CONFIG.lives.starting, CONFIG.lives.starting],
+  aiSkill: CONFIG.ai.startSkill,
+  rallyHits: 0,
   countdownValue: 0,
   countdownTimer: 0,
   hitPauseTimer: 0,
@@ -300,6 +312,8 @@ function startRoundCountdown() {
 
 function resetMatch() {
   state.lives = [CONFIG.lives.starting, CONFIG.lives.starting];
+  state.aiSkill = CONFIG.ai.startSkill;
+  state.rallyHits = 0;
   state.particles = [];
   state.trail = [];
   state.hitPauseTimer = 0;
@@ -325,6 +339,17 @@ function updateHud() {
   livesP2El.textContent = String(state.lives[1]);
 }
 
+function updateHudLabels() {
+  if (state.mode === GameMode.AI) {
+    labelP1El.textContent = "You";
+    labelP2El.textContent = "CPU";
+    return;
+  }
+
+  labelP1El.textContent = "Player 1";
+  labelP2El.textContent = "Player 2";
+}
+
 function showOverlay(overlay) {
   overlay.classList.remove("hidden");
 }
@@ -333,20 +358,127 @@ function hideOverlay(overlay) {
   overlay.classList.add("hidden");
 }
 
-function startGame() {
+function startGame(mode = state.mode) {
+  state.mode = mode;
   hideOverlay(menuOverlay);
   hideOverlay(victoryOverlay);
   resetMatch();
+  updateHudLabels();
   startRoundCountdown();
+}
+
+function returnToMenu() {
+  state.phase = GameState.MENU;
+  syncMusic(false);
+  showOverlay(menuOverlay);
+  hideOverlay(victoryOverlay);
+  resetMatch();
+  placeBallAtCenter();
 }
 
 function endVictory(winnerIndex) {
   state.phase = GameState.VICTORY;
   syncMusic(false);
   victoryTitle.textContent = "Victory";
-  victoryMessage.textContent = `Player ${winnerIndex + 1} wins!`;
+
+  if (state.mode === GameMode.AI) {
+    victoryMessage.textContent = winnerIndex === 0 ? "You win!" : "CPU wins!";
+  } else {
+    victoryMessage.textContent = `Player ${winnerIndex + 1} wins!`;
+  }
+
   showOverlay(victoryOverlay);
   playVictorySound();
+}
+
+function adjustAiSkill(delta) {
+  state.aiSkill = clamp(state.aiSkill + delta, CONFIG.ai.minSkill, CONFIG.ai.maxSkill);
+}
+
+function trackRallyHit() {
+  if (state.mode !== GameMode.AI) return;
+
+  state.rallyHits += 1;
+  if (state.rallyHits >= CONFIG.ai.rallyHitThreshold) {
+    adjustAiSkill(CONFIG.ai.skillUpPerLongRally);
+    state.rallyHits = 0;
+  }
+}
+
+function trackAiLifeChange(sideIndex) {
+  if (state.mode !== GameMode.AI) return;
+
+  state.rallyHits = 0;
+
+  if (sideIndex === 1) {
+    adjustAiSkill(CONFIG.ai.skillUpOnPlayerScore);
+    return;
+  }
+
+  if (sideIndex === 0) {
+    adjustAiSkill(-CONFIG.ai.skillDownOnPlayerMiss);
+  }
+}
+
+function getAiParams() {
+  const { aiSkill } = state;
+  const { baseSpeedRatio, maxSpeedRatio, maxPredictionError } = CONFIG.ai;
+
+  return {
+    speed: CONFIG.paddle.speed * (baseSpeedRatio + aiSkill * (maxSpeedRatio - baseSpeedRatio)),
+    predictionError: maxPredictionError * (1 - aiSkill),
+  };
+}
+
+function predictBallInterceptY() {
+  const paddle = paddles[1];
+  const { width, height } = CONFIG.canvas;
+  const targetX = paddle.x;
+  let x = ball.x;
+  let y = ball.y;
+  let vx = ball.vx;
+  let vy = ball.vy;
+  const step = 0.016;
+
+  if (vx <= 0) {
+    return height / 2 - paddle.h / 2;
+  }
+
+  for (let i = 0; i < 500; i += 1) {
+    x += vx * step;
+    y += vy * step;
+
+    if (y - ball.radius <= 0) {
+      y = ball.radius;
+      vy = Math.abs(vy);
+    } else if (y + ball.radius >= height) {
+      y = height - ball.radius;
+      vy = -Math.abs(vy);
+    }
+
+    if (x + ball.radius >= targetX) {
+      return y - paddle.h / 2;
+    }
+  }
+
+  return height / 2 - paddle.h / 2;
+}
+
+function updateAiPaddle(dt) {
+  if (state.mode !== GameMode.AI) return;
+
+  const paddle = paddles[1];
+  const { height } = CONFIG.canvas;
+  const params = getAiParams();
+  let targetY = predictBallInterceptY();
+
+  targetY += (Math.random() - 0.5) * 2 * params.predictionError;
+  targetY = clamp(targetY, 0, height - paddle.h);
+
+  const diff = targetY - paddle.y;
+  const move = clamp(diff, -params.speed * dt, params.speed * dt);
+  paddle.y += move;
+  paddle.y = clamp(paddle.y, 0, height - paddle.h);
 }
 
 function spawnParticles(x, y, color) {
@@ -397,6 +529,7 @@ function triggerPaddleHit(playerIndex) {
   state.paddleFlash[playerIndex] = CONFIG.effects.paddleFlashMs;
   spawnParticles(ball.x, ball.y, playerIndex === 0 ? CONFIG.colors.paddle1 : CONFIG.colors.paddle2);
   playPaddleHitSound();
+  trackRallyHit();
 }
 
 function triggerBoundaryBounce() {
@@ -489,6 +622,7 @@ function loseLife(sideIndex) {
   triggerLifeLostImpact(sideIndex);
   state.lives[sideIndex] -= 1;
   updateHud();
+  trackAiLifeChange(sideIndex);
 
   state.phase = GameState.LIFE_LOST;
   state.lifeLostFreezeTimer = CONFIG.effects.lifeLostFreezeMs;
@@ -516,8 +650,15 @@ function updatePaddleInput(dt) {
 
   if (keys.has("KeyW")) paddles[0].y -= paddleSpeed * dt;
   if (keys.has("KeyS")) paddles[0].y += paddleSpeed * dt;
-  if (keys.has("ArrowUp")) paddles[1].y -= paddleSpeed * dt;
-  if (keys.has("ArrowDown")) paddles[1].y += paddleSpeed * dt;
+
+  if (state.mode === GameMode.AI) {
+    if (keys.has("ArrowUp")) paddles[0].y -= paddleSpeed * dt;
+    if (keys.has("ArrowDown")) paddles[0].y += paddleSpeed * dt;
+    updateAiPaddle(dt);
+  } else {
+    if (keys.has("ArrowUp")) paddles[1].y -= paddleSpeed * dt;
+    if (keys.has("ArrowDown")) paddles[1].y += paddleSpeed * dt;
+  }
 
   for (const paddle of paddles) {
     paddle.y = clamp(paddle.y, 0, height - paddle.h);
@@ -893,15 +1034,25 @@ function setupInput() {
 }
 
 function setupUi() {
-  playBtn.addEventListener("click", () => {
+  pvpBtn.addEventListener("click", () => {
     getAudioContext();
-    startGame();
+    startGame(GameMode.PVP);
+    syncMusic(true);
+  });
+
+  aiBtn.addEventListener("click", () => {
+    getAudioContext();
+    startGame(GameMode.AI);
     syncMusic(true);
   });
 
   restartBtn.addEventListener("click", () => {
-    startGame();
+    startGame(state.mode);
     syncMusic(true);
+  });
+
+  menuBtn.addEventListener("click", () => {
+    returnToMenu();
   });
 
   musicToggle.addEventListener("click", () => {
@@ -918,6 +1069,7 @@ async function init() {
   resetPaddles();
   placeBallAtCenter();
   updateHud();
+  updateHudLabels();
   setupInput();
   setupUi();
   await loadAssets();
