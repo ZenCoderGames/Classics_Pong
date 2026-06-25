@@ -20,6 +20,7 @@ const pvpBtn = document.getElementById("pvp-btn");
 const aiBtn = document.getElementById("ai-btn");
 const restartBtn = document.getElementById("restart-btn");
 const menuBtn = document.getElementById("menu-btn");
+const restartMenuBtn = document.getElementById("restart-menu-btn");
 const musicToggle = document.getElementById("music-toggle");
 
 canvas.width = CONFIG.canvas.width;
@@ -61,6 +62,9 @@ const state = {
   lives: [CONFIG.lives.starting, CONFIG.lives.starting],
   aiSkill: CONFIG.ai.startSkill,
   rallyHits: 0,
+  aiTargetY: null,
+  aiTargetLocked: false,
+  aiOpeningApproach: true,
   countdownValue: 0,
   countdownTimer: 0,
   hitPauseTimer: 0,
@@ -304,16 +308,24 @@ function launchBall() {
 
 function startRoundCountdown() {
   placeBallAtCenter();
+  resetAiTracking();
   state.phase = GameState.COUNTDOWN;
   state.countdownValue = CONFIG.countdown.startValue;
   state.countdownTimer = CONFIG.countdown.stepMs;
   playCountdownTick();
 }
 
+function resetAiTracking() {
+  state.aiTargetY = null;
+  state.aiTargetLocked = false;
+  state.aiOpeningApproach = true;
+}
+
 function resetMatch() {
   state.lives = [CONFIG.lives.starting, CONFIG.lives.starting];
   state.aiSkill = CONFIG.ai.startSkill;
   state.rallyHits = 0;
+  resetAiTracking();
   state.particles = [];
   state.trail = [];
   state.hitPauseTimer = 0;
@@ -374,6 +386,7 @@ function returnToMenu() {
   hideOverlay(victoryOverlay);
   resetMatch();
   placeBallAtCenter();
+  updateHudLabels();
 }
 
 function endVictory(winnerIndex) {
@@ -422,12 +435,55 @@ function trackAiLifeChange(sideIndex) {
 
 function getAiParams() {
   const { aiSkill } = state;
-  const { baseSpeedRatio, maxSpeedRatio, maxPredictionError } = CONFIG.ai;
+  const { baseSpeedRatio, maxSpeedRatio, maxPredictionError, returnSpeedRatio } = CONFIG.ai;
 
   return {
     speed: CONFIG.paddle.speed * (baseSpeedRatio + aiSkill * (maxSpeedRatio - baseSpeedRatio)),
+    returnSpeed: CONFIG.paddle.speed * returnSpeedRatio,
     predictionError: maxPredictionError * (1 - aiSkill),
   };
+}
+
+function hasBallClearedPlayerPaddle() {
+  const playerPaddle = paddles[0];
+  return ball.x >= playerPaddle.x + playerPaddle.w + ball.radius;
+}
+
+function canAiCommitPrediction() {
+  if (ball.vx <= 0) return false;
+  if (state.aiOpeningApproach) return true;
+  return hasBallClearedPlayerPaddle();
+}
+
+function lockAiTarget() {
+  const paddle = paddles[1];
+  const { height } = CONFIG.canvas;
+  const params = getAiParams();
+  let targetY = predictBallInterceptY();
+  targetY += (Math.random() - 0.5) * 2 * params.predictionError;
+  state.aiTargetY = clamp(targetY, 0, height - paddle.h);
+  state.aiTargetLocked = true;
+  state.aiOpeningApproach = false;
+}
+
+function notifyPlayerReturnedBall() {
+  if (state.mode !== GameMode.AI) return;
+
+  state.aiOpeningApproach = false;
+  state.aiTargetLocked = false;
+  state.aiTargetY = null;
+}
+
+function moveAiPaddleToward(targetY, speed, dt) {
+  const paddle = paddles[1];
+  const { height } = CONFIG.canvas;
+  const { targetDeadzone } = CONFIG.ai;
+  const diff = targetY - paddle.y;
+
+  if (Math.abs(diff) <= targetDeadzone) return;
+
+  paddle.y += clamp(diff, -speed * dt, speed * dt);
+  paddle.y = clamp(paddle.y, 0, height - paddle.h);
 }
 
 function predictBallInterceptY() {
@@ -470,15 +526,22 @@ function updateAiPaddle(dt) {
   const paddle = paddles[1];
   const { height } = CONFIG.canvas;
   const params = getAiParams();
-  let targetY = predictBallInterceptY();
+  const centerY = (height - paddle.h) / 2;
 
-  targetY += (Math.random() - 0.5) * 2 * params.predictionError;
-  targetY = clamp(targetY, 0, height - paddle.h);
+  if (ball.vx <= 0) {
+    state.aiTargetLocked = false;
+    state.aiTargetY = null;
+    moveAiPaddleToward(centerY, params.returnSpeed, dt);
+    return;
+  }
 
-  const diff = targetY - paddle.y;
-  const move = clamp(diff, -params.speed * dt, params.speed * dt);
-  paddle.y += move;
-  paddle.y = clamp(paddle.y, 0, height - paddle.h);
+  if (!state.aiTargetLocked && canAiCommitPrediction()) {
+    lockAiTarget();
+  }
+
+  if (state.aiTargetLocked && state.aiTargetY !== null) {
+    moveAiPaddleToward(state.aiTargetY, params.speed, dt);
+  }
 }
 
 function spawnParticles(x, y, color) {
@@ -591,6 +654,7 @@ function reflectBallOffPaddle(paddle, playerIndex) {
 
   if (playerIndex === 0) {
     ball.x = paddle.x + paddle.w + ball.radius + 1;
+    notifyPlayerReturnedBall();
   } else {
     ball.x = paddle.x - ball.radius - 1;
   }
@@ -1052,6 +1116,10 @@ function setupUi() {
   });
 
   menuBtn.addEventListener("click", () => {
+    returnToMenu();
+  });
+
+  restartMenuBtn.addEventListener("click", () => {
     returnToMenu();
   });
 

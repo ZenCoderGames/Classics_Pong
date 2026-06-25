@@ -291,6 +291,20 @@ body::before {
   box-shadow: 0 8px 22px rgba(255, 255, 255, 0.12);
 }
 
+.game-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  width: min(100%, 820px);
+  padding-top: 0.25rem;
+}
+
+.game-footer-btn {
+  padding: 0.55rem 1.35rem;
+  font-size: 0.82rem;
+}
+
 .music-toggle {
   border: none;
   background: transparent;
