@@ -39,7 +39,13 @@ const GameState = {
   VICTORY: "victory",
 };
 
-const keys = new Set();
+const input = {
+  p1Up: false,
+  p1Down: false,
+  p2Up: false,
+  p2Down: false,
+};
+
 let audioCtx = null;
 let audioEnabled = CONFIG.audio.enabledByDefault;
 
@@ -370,12 +376,79 @@ function hideOverlay(overlay) {
   overlay.classList.add("hidden");
 }
 
+function setInput(name, down) {
+  if (!(name in input)) return;
+  input[name] = down;
+}
+
+function clearInput() {
+  for (const key of Object.keys(input)) {
+    input[key] = false;
+  }
+}
+
+function handleKeyChange(code, down) {
+  if (code === "KeyW") setInput("p1Up", down);
+  else if (code === "KeyS") setInput("p1Down", down);
+  else if (code === "ArrowUp") setInput(state.mode === GameMode.AI ? "p1Up" : "p2Up", down);
+  else if (code === "ArrowDown") setInput(state.mode === GameMode.AI ? "p1Down" : "p2Down", down);
+}
+
+function syncMobileControlsVisibility() {
+  const forceShow = CONFIG.debug?.showMobileControls === true;
+  const mobileViewport = window.matchMedia("(max-width: 720px)").matches;
+  document.body.classList.toggle("show-mobile-controls", forceShow || mobileViewport);
+}
+
+function syncMobileControlLayout() {
+  const rightControls = document.getElementById("mobile-controls-right");
+  rightControls?.classList.toggle("hidden", state.mode !== GameMode.PVP);
+}
+
+function bindMobileControls() {
+  const controls = document.querySelector(".playfield-row");
+  if (!controls) return;
+
+  const setPressed = (btn, pressed) => {
+    btn.classList.toggle("is-pressed", pressed);
+  };
+
+  const onDown = (btn, inputName) => {
+    setInput(inputName, true);
+    setPressed(btn, true);
+    getAudioContext();
+  };
+
+  const onUp = (btn, inputName) => {
+    setInput(inputName, false);
+    setPressed(btn, false);
+  };
+
+  for (const btn of controls.querySelectorAll("[data-input]")) {
+    const inputName = btn.dataset.input;
+
+    btn.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      btn.setPointerCapture(event.pointerId);
+      onDown(btn, inputName);
+    });
+
+    const release = () => onUp(btn, inputName);
+    btn.addEventListener("pointerup", release);
+    btn.addEventListener("pointercancel", release);
+    btn.addEventListener("pointerleave", (event) => {
+      if (!btn.hasPointerCapture(event.pointerId)) release();
+    });
+  }
+}
+
 function startGame(mode = state.mode) {
   state.mode = mode;
   hideOverlay(menuOverlay);
   hideOverlay(victoryOverlay);
   resetMatch();
   updateHudLabels();
+  syncMobileControlLayout();
   startRoundCountdown();
 }
 
@@ -385,8 +458,10 @@ function returnToMenu() {
   showOverlay(menuOverlay);
   hideOverlay(victoryOverlay);
   resetMatch();
+  clearInput();
   placeBallAtCenter();
   updateHudLabels();
+  syncMobileControlLayout();
 }
 
 function endVictory(winnerIndex) {
@@ -712,16 +787,14 @@ function updatePaddleInput(dt) {
   const { height } = CONFIG.canvas;
   const paddleSpeed = CONFIG.paddle.speed;
 
-  if (keys.has("KeyW")) paddles[0].y -= paddleSpeed * dt;
-  if (keys.has("KeyS")) paddles[0].y += paddleSpeed * dt;
+  if (input.p1Up) paddles[0].y -= paddleSpeed * dt;
+  if (input.p1Down) paddles[0].y += paddleSpeed * dt;
 
   if (state.mode === GameMode.AI) {
-    if (keys.has("ArrowUp")) paddles[0].y -= paddleSpeed * dt;
-    if (keys.has("ArrowDown")) paddles[0].y += paddleSpeed * dt;
     updateAiPaddle(dt);
   } else {
-    if (keys.has("ArrowUp")) paddles[1].y -= paddleSpeed * dt;
-    if (keys.has("ArrowDown")) paddles[1].y += paddleSpeed * dt;
+    if (input.p2Up) paddles[1].y -= paddleSpeed * dt;
+    if (input.p2Down) paddles[1].y += paddleSpeed * dt;
   }
 
   for (const paddle of paddles) {
@@ -1089,11 +1162,11 @@ function setupInput() {
     if (["ArrowUp", "ArrowDown", "Space"].includes(event.code)) {
       event.preventDefault();
     }
-    keys.add(event.code);
+    handleKeyChange(event.code, true);
   });
 
   window.addEventListener("keyup", (event) => {
-    keys.delete(event.code);
+    handleKeyChange(event.code, false);
   });
 }
 
@@ -1140,6 +1213,10 @@ async function init() {
   updateHudLabels();
   setupInput();
   setupUi();
+  bindMobileControls();
+  syncMobileControlsVisibility();
+  syncMobileControlLayout();
+  window.matchMedia("(max-width: 720px)").addEventListener("change", syncMobileControlsVisibility);
   await loadAssets();
   requestAnimationFrame(gameLoop);
 }

@@ -104,4 +104,8 @@ export const CONFIG = {
     skillUpPerLongRally: 0.02,
     rallyHitThreshold: 8,
   },
+
+  debug: {
+    showMobileControls: false,
+  },
 };

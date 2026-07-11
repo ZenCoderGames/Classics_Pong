@@ -14,6 +14,7 @@
   --blue: #3b82f6;
   --red: #ef4444;
   --green: #8fa33a;
+  --control-arrow: #ffffff;
 }
 
 body {
@@ -135,6 +136,15 @@ body::before {
   text-shadow: 0 0 18px rgba(239, 68, 68, 0.55);
 }
 
+.playfield-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: fit-content;
+  max-width: 100%;
+}
+
 .playfield-shell {
   position: relative;
   width: fit-content;
@@ -185,6 +195,10 @@ body::before {
 
 .overlay.hidden {
   display: none;
+}
+
+.hidden {
+  display: none !important;
 }
 
 .prompt-card {
@@ -318,6 +332,76 @@ body::before {
 
 .music-toggle:hover {
   color: var(--text);
+}
+
+.mobile-controls-side {
+  display: none;
+  flex: 0 0 auto;
+  align-items: center;
+  align-self: stretch;
+  padding: 0.35rem 0;
+}
+
+.mobile-controls-stack {
+  display: grid;
+  gap: 0.5rem;
+  width: 3.4rem;
+  align-content: center;
+  min-height: 100%;
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  min-height: 52px;
+  border: 2px solid var(--control-arrow);
+  border-radius: 8px;
+  background: rgba(28, 27, 43, 0.92);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s, filter 0.08s;
+}
+
+.control-btn::before {
+  content: "";
+  display: block;
+  width: 1.25rem;
+  height: 1.5rem;
+  background: var(--control-arrow);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 12'%3E%3Crect x='4' y='0' width='2' height='1'/%3E%3Crect x='3' y='1' width='4' height='1'/%3E%3Crect x='2' y='2' width='6' height='1'/%3E%3Crect x='1' y='3' width='8' height='1'/%3E%3Crect x='4' y='4' width='2' height='8'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 12'%3E%3Crect x='4' y='0' width='2' height='1'/%3E%3Crect x='3' y='1' width='4' height='1'/%3E%3Crect x='2' y='2' width='6' height='1'/%3E%3Crect x='1' y='3' width='8' height='1'/%3E%3Crect x='4' y='4' width='2' height='8'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.control-btn-down::before {
+  transform: rotate(180deg);
+}
+
+.control-btn:active,
+.control-btn.is-pressed {
+  transform: scale(0.96);
+  filter: brightness(1.15);
+}
+
+body.show-mobile-controls .mobile-controls-side {
+  display: flex;
+}
+
+body.show-mobile-controls .mobile-controls-side.hidden {
+  display: none !important;
+}
+
+body.show-mobile-controls .controls-hint {
+  display: none;
 }
 
 @media (max-width: 720px) {

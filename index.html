@@ -25,33 +25,49 @@
         </div>
       </header>
 
-      <main class="playfield-shell">
-        <div class="canvas-wrapper">
-          <canvas id="game-canvas"></canvas>
-        </div>
+      <div class="playfield-row">
+        <aside id="mobile-controls-left" class="mobile-controls-side" aria-label="Player 1 touch controls">
+          <div class="mobile-controls-stack">
+            <button type="button" class="control-btn control-btn-up" data-input="p1Up" aria-label="Player 1 up"></button>
+            <button type="button" class="control-btn control-btn-down" data-input="p1Down" aria-label="Player 1 down"></button>
+          </div>
+        </aside>
 
-        <div id="menu-overlay" class="overlay">
-          <div class="prompt-card">
-            <p class="menu-heading">Choose Mode</p>
-            <p class="controls-hint">Local PvP: W / S vs ↑ / ↓</p>
-            <div class="menu-actions">
-              <button id="pvp-btn" class="btn btn-primary" type="button">Local PvP</button>
-              <button id="ai-btn" class="btn btn-secondary" type="button">vs CPU</button>
+        <main class="playfield-shell">
+          <div class="canvas-wrapper">
+            <canvas id="game-canvas"></canvas>
+          </div>
+
+          <div id="menu-overlay" class="overlay">
+            <div class="prompt-card">
+              <p class="menu-heading">Choose Mode</p>
+              <p class="controls-hint">Local PvP: W / S vs ↑ / ↓</p>
+              <div class="menu-actions">
+                <button id="pvp-btn" class="btn btn-primary" type="button">Local PvP</button>
+                <button id="ai-btn" class="btn btn-secondary" type="button">vs CPU</button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div id="victory-overlay" class="overlay hidden">
-          <div class="popup">
-            <h2 id="victory-title">Victory</h2>
-            <p id="victory-message">Player 1 wins!</p>
-            <div class="popup-actions">
-              <button id="restart-btn" class="btn btn-primary" type="button">Play Again</button>
-              <button id="menu-btn" class="btn btn-secondary" type="button">Main Menu</button>
+          <div id="victory-overlay" class="overlay hidden">
+            <div class="popup">
+              <h2 id="victory-title">Victory</h2>
+              <p id="victory-message">Player 1 wins!</p>
+              <div class="popup-actions">
+                <button id="restart-btn" class="btn btn-primary" type="button">Play Again</button>
+                <button id="menu-btn" class="btn btn-secondary" type="button">Main Menu</button>
+              </div>
             </div>
           </div>
-        </div>
-      </main>
+        </main>
+
+        <aside id="mobile-controls-right" class="mobile-controls-side hidden" aria-label="Player 2 touch controls">
+          <div class="mobile-controls-stack">
+            <button type="button" class="control-btn control-btn-up" data-input="p2Up" aria-label="Player 2 up"></button>
+            <button type="button" class="control-btn control-btn-down" data-input="p2Down" aria-label="Player 2 down"></button>
+          </div>
+        </aside>
+      </div>
 
       <footer class="game-footer">
         <button id="restart-menu-btn" class="btn btn-secondary game-footer-btn" type="button">Restart</button>
